@@ -46,8 +46,38 @@ async function ask(){
       meta+='<div class="sources">'+data.sources.map(s=>`<div class="source"><span class="source-icon">${s.type==='web'?'⌁':'▱'}</span><span>${esc(s.title||s.source||'Evidence')}${s.page?' · p.'+s.page:''}${s.url?` · <a target="_blank" rel="noopener" href="${esc(s.url)}">open source ↗</a>`:''}</span></div>`).join('')+'</div>';
     }
     if(data.trace?.length) meta+=`<div class="trace"><details><summary>Inspect Self-RAG workflow trace</summary><ol>${data.trace.map(t=>`<li>${esc(t)}</li>`).join('')}</ol></details></div>`;
+    meta+=`<div class="msg-actions"><button class="slack-copy-btn" type="button">📋 Copy for Slack</button><button class="plain-copy-btn" type="button">📄 Copy Raw</button></div>`;
     meta+='</div>';
-    addMessage('assistant',esc(data.answer),meta);
+    const msgEl = addMessage('assistant',esc(data.answer),meta);
+
+    const slackBtn = msgEl.querySelector('.slack-copy-btn');
+    if (slackBtn) {
+      slackBtn.addEventListener('click', () => {
+        const sourcesSummary = (data.sources || []).map(s => s.title || s.source || 'Runbook').join(', ');
+        const slackMarkdown = [
+          `*🚨 CloudOps Sentinel — Incident Resolution*`,
+          `*Question:* ${question}`,
+          `*Resolution:*`,
+          data.answer,
+          ``,
+          `_Route: ${data.route || 'Private Runbooks'} | IsSUP: ${data.support_status || 'verified'} | Sources: ${sourcesSummary || 'Internal'}_`
+        ].join('\n');
+        navigator.clipboard.writeText(slackMarkdown).then(() => {
+          slackBtn.textContent = '✓ Copied for Slack!';
+          setTimeout(() => { slackBtn.textContent = '📋 Copy for Slack'; }, 2000);
+        });
+      });
+    }
+
+    const plainBtn = msgEl.querySelector('.plain-copy-btn');
+    if (plainBtn) {
+      plainBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(data.answer).then(() => {
+          plainBtn.textContent = '✓ Copied!';
+          setTimeout(() => { plainBtn.textContent = '📄 Copy Raw'; }, 2000);
+        });
+      });
+    }
   }catch(e){loading.remove();addMessage('assistant','Request failed: '+esc(e.message));}
   finally{send.disabled=false;q.focus();}
 }

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 ROOT = Path(__file__).resolve().parent.parent
 
